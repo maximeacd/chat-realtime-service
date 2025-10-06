@@ -3,6 +3,8 @@ package com.chatapp.realtime_chat_service.service;
 import com.chatapp.realtime_chat_service.entity.User;
 import com.chatapp.realtime_chat_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,22 @@ public class UserService {
 
     public Optional<User> findByUsername(String username){
         return userRepository.findByUsername(username);
+    }
+
+    public boolean existsByUsername(String username){
+        return userRepository.existsByUsername(username);
+    }
+
+    public Page<User> findByRolesContaining(String role, Pageable pageable){
+        return userRepository.findByRolesContaining(role, pageable);
+    }
+
+    public Page<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable){
+        return userRepository.findByUsernameContainingIgnoreCase(username, pageable);
+    }
+
+    public void deleteByUsername(String username){
+        userRepository.deleteByUsername(username);
     }
 
 }
