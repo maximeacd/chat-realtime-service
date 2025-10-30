@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ang">
+<head>
+    <meta charset="UTF-8">
+    <title>Realtime chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: "Poppins", "Segoe UI", Roboto, sans-serif; }
+
+        body {
+          margin: 0;
+          background: #e0e7ff;
+          display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+
+        .login-container {
+          background: white;
+          width: 400px;
+          height: 420px;
+          border-radius: 20px;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          gap: 25px;
+          text-align: center;
+          padding: 40px;
+        }
+
+        .login-container h2 { color: #4f46e5; font-size: 26px; margin:0; }
+        .login-container p { color: #4b5563; font-size: 15px; }
+        .login-container input {
+          width: auto; min-width:150px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;
+          font-size: 16px; outline: none;
+        }
+        .login-container input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.2);}
+        .login-container button {
+          background: #4f46e5; color:white; border:none; padding:12px 24px; border-radius:10px;
+          cursor:pointer; font-weight:bold; letter-spacing:0.5px;
+        }
+        .login-container button:hover { background:#4338ca; }
+
+        .chat-container { background:#ffffff; width:400px; height:600px;
+          display:flex; flex-direction:column; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.1); overflow:hidden;
+        }
+        header { background:#4f46e5; color:white; padding:16px; font-size:20px; text-align:center; font-weight:bold; }
+        #chat { flex:1; padding:12px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f3f4f6; }
+        .message { padding:10px 14px; border-radius:12px; max-width:80%; word-wrap:break-word; position:relative; animation:appear 0.2s ease;}
+        @keyframes appear { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+        .username { font-size:12px; font-weight:600; margin-bottom:3px; }
+        .message.self { background:#4f46e5; color:white; align-self:flex-end; border-bottom-right-radius:0; }
+        .message.other { background:#e5e7eb; color:#111827; align-self:flex-start; border-bottom-left-radius:0; }
+        .input-area { display:flex; border-top:1px solid #e5e7eb; padding:10px; gap:8px; background:#f9fafb; }
+        input[type="text"] { flex:1; padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; outline:none; font-size:14px; }
+        input[type="text"]:focus { border-color:#4f46e5; }
+        button { background:#4f46e5; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; transition:background 0.2s; }
+        button:hover { background:#4338ca; }
+        #chat::-webkit-scrollbar { width:8px; }
+        #chat::-webkit-scrollbar-thumb { background-color:#cbd5e1; border-radius:8px; }
+    </style>
+</head>
+<body>
+
+<div class="login-container" id="loginPage">
+    <h2>💬 Welcome to the Chat</h2>
+    <p>Enter your username to start chatting :</p>
+    <input type="text" id="usernameInput" placeholder="Your username..." />
+    <button onclick="enterChat()">Enter the chat</button>
+</div>
+
+<div class="chat-container" id="chatPage" style="display:none;">
+    <header>💬 Realtime chat</header>
+    <div id="chat"></div>
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Write your message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    const senderId = Math.floor(Math.random()*10000);
+    let username = "";
+    let stompClient = null;
+
+    const colorPalette = ["#F87171","#34D399","#60A5FA","#FBBF24","#A78BFA","#F472B6","#10B981","#F59E0B","#3B82F6","#E879F9"];
+    const userColors = {}; // username → couleur
+
+    function getUserColor(name){
+      let hash = 0;
+      for(let i=0; i<name.length; i++){
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const colors = ["#F87171","#34D399","#60A5FA","#FBBF24","#A78BFA","#F472B6","#10B981","#F59E0B","#3B82F6","#E879F9"];
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+
+    function enterChat(){
+      const input = document.getElementById("usernameInput");
+      if(input.value.trim()===""){ alert("Please choose a username !"); return; }
+      username = input.value.trim();
+      document.getElementById("loginPage").style.display="none";
+      document.getElementById("chatPage").style.display="flex";
+      connect();
+    }
+
+    function connect(){
+      const socket = new SockJS("http://localhost:8081/ws");
+      stompClient = Stomp.over(socket);
+      stompClient.connect({}, frame=>{
+        console.log("Connected:", frame);
+        stompClient.subscribe("/topic/public", message=>{
+          showMessage(JSON.parse(message.body));
+        });
+        stompClient.subscribe("/queue/"+senderId, message=>{
+          showMessage(JSON.parse(message.body));
+        });
+      });
+    }
+
+    function sendMessage(){
+      const input = document.getElementById("messageInput");
+      if(input.value.trim()==="") return;
+      const chatMessage = {
+        senderId: senderId,
+        senderName: username,
+        content: input.value,
+        receiverId: null
+      };
+      stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+      input.value="";
+    }
+
+    function showMessage(message){
+      const chat = document.getElementById("chat");
+      const wrapper = document.createElement("div");
+      const name = document.createElement("div");
+      const msg = document.createElement("div");
+
+      name.classList.add("username");
+      msg.classList.add("message");
+
+      if(message.senderId===senderId){
+        msg.classList.add("self");
+        name.textContent=username;
+        name.style.color="#4f46e5";
+      } else {
+        msg.classList.add("other");
+        const color = getUserColor(message.senderName || "Unknown");
+        name.textContent = message.senderName || "Unknown";
+        name.style.color=color;
+        msg.style.backgroundColor=color+"33";
+      }
+
+      msg.textContent=message.content;
+      wrapper.appendChild(name);
+      wrapper.appendChild(msg);
+      chat.appendChild(wrapper);
+      chat.scrollTop=chat.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
