@@ -3,7 +3,6 @@ import redis
 import json
 from textblob import TextBlob
 
-# Utiliser les variables d'environnement du container
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
