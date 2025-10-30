@@ -12,6 +12,7 @@ public class ChatMessage {
 
     private Long senderId;
     private Long receiverId;
+    private String senderName;
     private String content;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();

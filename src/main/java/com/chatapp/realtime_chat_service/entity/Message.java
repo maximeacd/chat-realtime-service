@@ -22,6 +22,8 @@ public class Message {
 
     private Long receiverId;
 
+    private String senderName;
+
     @Column(nullable = false)
     private String content;
 

@@ -28,6 +28,7 @@ public class ChatController {
         Message message = Message.builder()
                 .senderId(chatMessage.getSenderId())
                 .receiverId(chatMessage.getReceiverId())
+                .senderName(chatMessage.getSenderName())
                 .content(chatMessage.getContent())
                 .timestamp(LocalDateTime.now())
                 .build();
