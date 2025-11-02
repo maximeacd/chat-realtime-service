@@ -41,6 +41,31 @@ The goal: showcase the ability to design and implement a scalable, distributed, 
 
 ---
 
+## 💬 Frontend (Demo)
+
+A simple demo interface is included in the project to test the real-time chat features.  
+You can find it at:  
+`src/main/resources/static/index.html`
+
+### Access
+
+Once the backend is running (via `docker-compose up --build` or `mvn spring-boot:run`), open:
+
+👉 [http://localhost:8081](http://localhost:8081)
+
+### Features
+- Join a public chat room by entering a username  
+- Send and receive messages in real time via WebSocket (STOMP)  
+- Simple and clean interface for testing and demonstration purposes
+
+<img width="888" height="783" alt="image" src="https://github.com/user-attachments/assets/db72d3d7-0218-4b02-8dfa-518197f42757" />
+
+<img width="1711" height="859" alt="image" src="https://github.com/user-attachments/assets/887cc8a2-a9ac-4f97-9446-ab971a641dd2" />
+
+> 💡 This frontend is meant **for demonstration and testing only**, not for production use.
+
+---
+
 ## ▶️ How to Run
 
 ### ⚙️ Requirements
@@ -105,4 +130,3 @@ This project demonstrates skills in:
 - Building a real-time distributed system
 - Connecting multiple services (Java, Redis, PostgreSQL, Python Worker)
 - Dockerizing a full-stack backend
-- Providing professional documentation with Swagger + Postman
